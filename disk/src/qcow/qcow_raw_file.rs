@@ -65,7 +65,7 @@ impl QcowRawFile {
     }
 
     /// Writes `table` of u64 pointers to `offset` in the file.
-    /// `non_zero_flags` will be ORed with all non-zero values in `table`.
+    /// `non_zero_flags` will be ORed with all values in `table` that contain a cluster address.
     /// writing.
     pub fn write_pointer_table(
         &mut self,
@@ -76,8 +76,8 @@ impl QcowRawFile {
         self.file.seek(SeekFrom::Start(offset))?;
         let mut buffer = BufWriter::with_capacity(size_of_val(table), &self.file);
         for addr in table {
-            let val = if *addr == 0 {
-                0
+            let val = if *addr & !self.cluster_mask == 0 {
+                *addr
             } else {
                 *addr | non_zero_flags
             };
